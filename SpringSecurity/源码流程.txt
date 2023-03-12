@@ -1,0 +1,85 @@
+1、框架创建过滤器链流程
+   （1）创建WebSecurity【WebSecurityConfiguration】
+   （2）填充WebSecurity的过滤器链属性：SecurityFilterChain
+   
+      a.如果有自定义的SecurityFilterChain，则优先使用自定义的SecurityFilterChain配置类 【优先级高】
+        ·需要有个httpSecurity属性，此httpSecurity是【HttpSecurityConfiguration】创建的，创建流程见 2
+        
+      b.否则使用默认的SecurityFilterChain，而默认的SecurityFilterChain需要依赖httpSecurity创建 【优先级低】
+        ·创建httpSecurity【HttpSecurityConfiguration】
+        ·通过httpSecurity创建SecurityFilterChain 【SpringBootWebSecurityConfiguration】
+ 
+ 
+ 2、httpSecurity创建过滤器链流程
+ SecurityFilterChain chain = httpSecurity.build()流程，代码如下:
+ 	protected final O doBuild() throws Exception {
+		synchronized (this.configurers) {
+			this.buildState = BuildState.INITIALIZING;
+			beforeInit();
+			init();
+			this.buildState = BuildState.CONFIGURING;
+			beforeConfigure();
+			configure();
+			this.buildState = BuildState.BUILDING;
+			O result = performBuild();
+			this.buildState = BuildState.BUILT;
+			return result;
+		}
+	}
+	
+ （1）beforeConfigure()
+      创建认证所需的信息
+      a）通过AuthenticationManagerBuilder创建class AuthenticationManager{//认证管理器
+        AuthenticationProvider[] providers;//真正认证处理的类
+        authenticate();//认证方法，底层会调用providers进行认证
+      }
+      
+      **可以通过httpSecurity.authenticationProvider()注册provider
+      
+ （2）configure()
+      调用注册配置类的configure()方法：配置httpSecurity、添加过滤器
+
+
+3、认证流程--UsernamePasswordAuthenticationFilter.doFilter()
+（1）满足认证条件:Post方法
+（2）过滤器通过AuthnticationManager.authenticate()进行认证
+（3）AuthnticationManager通过AuthenticationProvider进行认证【AuthnticationManager里面有很多AuthenticationProvider】
+（4）AuthenticationProvider通过AuthenticationService进行认证
+（5）认证成功得到Authentication对象，会存储到SecurityContextHolder.getContext().setContext()存储该对象，其他过滤器可以SpringSecurityHolder.getContext()获取该用户信息
+
+
+4、授权流程--FilterSecurityInterceptor.doFilter()
+【此Filter为最后一个Filter，走到这里说明已经认证通过】
+（1）取出请求的url、认证对象的权限
+（2）取出用户定义的url、权限
+（3）比较1、2，如果满足条件则授权成功、否则失败
+
+5、授权流程
+https://zhuanlan.zhihu.com/p/201001574
+https://zhuanlan.zhihu.com/p/201022434
+
+
+6、异常处理机制
+https://blog.csdn.net/qq_27062249/article/details/128239538
+https://www.jianshu.com/p/3ce4504e4bc4
+https://blog.csdn.net/Shair911/article/details/104202835
+
+（1）其他过滤器
+	抛出异常，交给上一层容器（Tomcat）去处理
+	
+（2）ExceptionTranslationFilter过滤器
+	Spring Security中的异常处理主要是在ExceptionTranslationFilter过滤器中完成的，
+   该过滤器主要处理AuthenticationException和AccessDeniedException类型的异常。
+	
+	自定义异常处理：
+	HttpSecurity http 提供的 exceptionHandling() 方法用来提供异常处理。
+	该方法构造出 ExceptionHandlingConfigurer 异常处理配置类。
+	该配置类提供了两个实用接口：
+	AuthenticationEntryPoint 该类用来统一处理 AuthenticationException 异常
+	AccessDeniedHandler 该类用来统一处理 AccessDeniedException 异常
+
+
+（3）FilterSecurityInterceptor
+	处理授权问题，在处理授权问题时，就会发现用户未登录、未授权等，进而抛出异常，
+	抛出的异常，最终会被 ExceptionTranslationFilter#doFilter 方法捕获
+

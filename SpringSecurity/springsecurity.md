@@ -16,6 +16,10 @@
 
 #### 1.4 自定义认证逻辑
 
+最简单方法：重新配置认证服务
+
+
+
 ![认证思路](.\image\认证思路.png)
 
 ![自定义认证逻辑](.\image\自定义认证逻辑.png)
@@ -24,7 +28,7 @@
 
 
 
-#### 1.5 配置HttpSecurity
+#### 1.5 配置
 
 https://blog.csdn.net/m0_51945027/article/details/119568320
 
@@ -34,7 +38,19 @@ https://blog.csdn.net/a2231476020/article/details/99735222
 
 https://www.jianshu.com/p/641aebc58682
 
+【认证、授权配置】https://blog.csdn.net/qq_53609683/article/details/121050306
+
+##### （1）编写认证、权限逻辑
+
+![权限代码](D:\Environment\GitSpace\future\source\source\SpringSecurity\image\权限代码.png)
+
+##### （2）配置认证、授权
+
+AuthenticationManagerBuilder【认证】、HttpSecurity【授权】
+
 ![常用配置](\image\常用配置.png)
+
+##### （3）配置WebSecurity
 
 ![](.\image\配置httpsecurity.png)
 

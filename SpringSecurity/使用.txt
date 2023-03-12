@@ -1,0 +1,104 @@
+1、添加过滤器的两种方式
+ （1）通过configure配置类
+   执行时机：httpSecurity.configure()
+   这种方式的好处是：可以保证configure(httpSecurity)中的httpSecurity是已经做了初始化beforeConfigure()动作，相当于创建了配置类所需的信息，比如AuthenticationManager
+      a）创建过滤器Filter
+      b）创建configure配置类，实现configure()方法，将过滤器加入到httpSecurity中
+      c）将configure配置类通过htppSecurity.apply()添加配置到httpSecurity中
+      @EnableWebSecurity
+      public class SecurityConfig {
+          @Bean
+          public SecurityFilterChain configure(HttpSecurity http) {
+              SecurityFilterChain securityFilterChain = null;
+              try {
+                  http.apply(new UserAuthenticationConfigure());
+                  http.authorizeRequests()
+                          .anyRequest().authenticated().and()
+                       //设置登录的默认页面
+                      .formLogin();
+                  securityFilterChain = http.build();
+              } catch (Exception e) {
+                  System.out.println(e);
+                  e.printStackTrace();
+              }
+              return securityFilterChain;
+          }
+      }
+      
+ （2）通过自定义配置类
+      执行时机：httpSecurity.build()前
+      httpSecurity.addFilter()，将过滤器加入到httpSecurity中
+      @EnableWebSecurity
+      public class SecurityConfig {
+          @Bean
+          public SecurityFilterChain configure(HttpSecurity http) {
+              SecurityFilterChain securityFilterChain = null;
+              try {
+                  http.addFilter(new JwtFilter());
+                  http.authorizeRequests()
+                          .anyRequest().authenticated().and()
+                       //设置登录的默认页面
+                      .formLogin();
+                  securityFilterChain = http.build();
+              } catch (Exception e) {
+                  System.out.println(e);
+                  e.printStackTrace();
+              }
+              return securityFilterChain;
+          }
+      }
+   
+2、配置httpSecurity的两种方式 [类似3]
+ （1）通过configure配置类
+      a）创建configure配置类，实现configure()方法，将过滤器加入到httpSecurity中
+      b）将configure配置类通过htppSecurity.apply()添加配置到httpSecurity中
+ （2）通过自定义配置类
+
+
+
+3、自定义认证逻辑
+（1）创建认证过滤器
+      doFilter()逻辑：调用AuthenticationManager的authenticate()认证
+ 
+（2）通过configure配置类，添加过滤器到HttpSecurity中
+public class UserAuthenticationConfigure extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
+
+    @Override
+    public void configure(HttpSecurity httpSecurity) {
+        //生成过滤器
+        AuthUserJwtFilter authUserJwtFilter = new AuthUserJwtFilter();
+        //配置过滤器的AuthenticationManager
+        authUserJwtFilter.setAuthenticationManager(httpSecurity.getSharedObject(AuthenticationManager.class));
+
+        httpSecurity.authenticationProvider(new UserAuthenticationProvider());
+        //添加过滤器
+        httpSecurity.addFilterBefore(authUserJwtFilter, UsernamePasswordAuthenticationFilter.class);
+        System.out.println("1");
+    }
+}
+      a）配置过滤器的AuthenticationManager
+          authUserJwtFilter.setAuthenticationManager(httpSecurity.getSharedObject(AuthenticationManager.class));
+      b）添加过滤器
+           httpSecurity.addFilterBefore(authUserJwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+（3）添加配置类
+@EnableWebSecurity
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain configure(HttpSecurity http) {
+        SecurityFilterChain securityFilterChain = null;
+        try {
+            //添加配置类
+            http.apply(new UserAuthenticationConfigure());
+            http.authorizeRequests()
+                    .anyRequest().authenticated().and()
+                 //设置登录的默认页面
+                .formLogin();
+            securityFilterChain = http.build();
+        } catch (Exception e) {
+            System.out.println(e);
+            e.printStackTrace();
+        }
+        return securityFilterChain;
+    }
+}
