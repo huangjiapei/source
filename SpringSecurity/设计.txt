@@ -1,0 +1,18 @@
+1、JWT过滤器
+（1）判断是否存在token，如果不存在则执行下一个过滤器；否则执行2）
+（2）校验token合法性
+    解析token_user，获取id，根据id去redis查询token_redis，
+	比较token_user与token_redis是否相等，
+	如果相等则执行3）；否则抛出异常
+（3）根据id去redis查询用户信息
+	 将用户信息存储到securityContext中，以便后面过滤器使用，
+	 执行下一个过滤器
+
+2、结构
+（1）对象
+User（UserDetail）：对应数据库表
+AuthenticationUser：springsecurity认证的对象
+
+（2）redis
+id -> token
+id -> user

@@ -1,0 +1,99 @@
+1、DisableEncodeUrlFilter
+父类：OncePerRequestFilter
+作用：生成新的response，防止对HttpServletResponse的URL重写
+
+2、*********************WebAsyncManagerIntegrationFilter
+父类：OncePerRequestFilter
+WebAsyncTask
+https://blog.csdn.net/liuyanglglg/article/details/104708317
+
+3、SecurityContextPersistenceFilter
+（1）作用：为后续filter建立所需的上下文，等其他filter执行完成之后，清除SecurityContext
+
+（2）使用上下文：
+  获取上下文：SecurityContextHolder.getContext
+  往上下文设置用户信息：SecurityContextHolder.getContext().setAuthentication(auth)
+ 
+（3）流程：
+    （a）创建SecurityContext
+    SecurityContextHolder.createEmptyContext
+    ThreadLocalSecurityContextHolderStrategy.createEmptyContext
+
+    （b）存储SecurityContext
+    SecurityContextHolder.setContext(SecurityContext)
+    ThreadLocalSecurityContextHolderStrategy.setContext(SecurityContext) 存储到ThreadLocal中
+
+    （c）执行其他过滤器
+
+    （d）清除SecurityContext
+    SecurityContextHolder.clearContext() 从ThreadLocal中清除
+
+
+4、HeaderWriterFilter
+（1）父类：OncePerRequestFilter
+（2）作用：请求前后写入一些往前请求头或者响应头写入一些信息，浏览器收到这些信息会进行防止攻击处理。
+            通过HTTP 响应标头，可显著减少现代浏览器中的 XSS、Clickjacking 等代码注入攻击。
+
+（3）HeaderWriter列表
+https://www.cnblogs.com/wangstudyblog/p/14813168.html
+HeaderWriterFilter写入的HeaderWriter笔者列举了一些，具体作用可以网上查阅：
+Header [name: X-Content-Type-Options, values: [nosniff]]
+Header [name: X-XSS-Protection, values: [1; mode=block]]
+Header [name: Cache-Control, values: [no-cache, no-store, max-age=0, must-revalidate]]
+Header [name: Pragma, values: [no-cache]]
+Header [name: Expires, values: [0]]
+
+（4）配置：
+见 https://www.cnblogs.com/wangstudyblog/p/14813168.html
+a）新增HeaderWriter，自定义写入请求头或者响应头信息
+http.headers().addHeaderWriter()
+b）修改原有HeaderWriter
+http.headers().cacheControl()
+
+5、CsrfFilter
+（1）父类：OncePerRequestFilter
+（2）作用：防止跨域攻击
+
+6、UsernamePasswordAuthenticationFilter
+（1）父类：AbstractAuthenticationProcessingFilter
+（2）作用：实现登录认证
+
+7、LogoutFilter
+作用：退出登录
+
+
+8、RequestCacheAwareFilter
+https://segmentfault.com/a/1190000004183264
+作用：用于用户登录成功后，重定向到指定页面时，从缓存中获取之前的request信息
+【request缓存是在session中，因此只要session绘画连接在，缓存就在】
+坑点：
+	如果网站认证是信息存放在header中。
+	第一次请求受保护资源时，请求头中不包含认证信息 ，验证失败，该请求会被缓存，之后即使用户填写了信息，
+	也会因为request被恢复导致信息丢失从而认证失败。
+	最简单的方案当然是不缓存request。
+
+默认情况下，三种request不会被缓存。
+请求地址以/favicon.ico结尾
+header中的content-type值为application/json
+header中的X-Requested-With值为XMLHttpRequest
+
+9、SecurityContextHolderAwareRequestFilter
+作用：封装HttpServletRequest，并进行了扩展
+Spring Security TokenEndpoint中获取token的请求，有这样一个参数：Principal。 
+对于一个普通HttpServletRequest，是没有Principal参数类型的。
+SecurityContextHolderAwareRequestFilter通过HttpServletRequestFactory将HttpServletRequest请求包装成SecurityContextHolderAwareRequestWrapper，
+它实现了HttpServletRequest，并进行了扩展，添加一些额外的方法，比如：getPrincipal()方法等。这样就可以那些需要Principal等参数的Controller就可以接收到对应参数了。除了这个地方的应用，在其他地方，也可以直接调用request#getUserPrincipal()获取对应信息。
+
+
+10、AnonymousAuthenticationFilter
+作用：匿名过滤器，配置一些url可在未登录未授权的时候（使用匿名用户）让他授权通过
+
+11、SessionManagementFilter
+
+
+12、ExceptionTranslationFilter
+作用：该过滤器主要处理AuthenticationException和AccessDeniedException类型的异常。
+
+
+13、FilterSecurityInterceptor
+作用：认证、授权

@@ -1,0 +1,113 @@
+1、HeaderWriterFilter 安全头配置：浏览器接收到这些响应头之后，会继续防攻击处理
+https://www.cnblogs.com/wangstudyblog/p/14813168.html
+（1）缓存控制
+http.headers().cacheControl().disable()
+
+（2）X-Content-Type-Options
+http.headers().contentTypeOptions().disable()
+
+（3）Strict-Transport-Security
+http.headers().httpStrictTransportSecurity().includeSubDomains(false).maxAgeInSeconds(3600)
+
+（4）X-Frame-Options
+http.headers().frameOptions().sameOrigin()
+
+（5）X-XSS-Protection
+http.headers().xssProtection().block(false)
+
+2、CsrfFilter csrf跨域攻击
+http.crsf().disable()
+
+3、LogoutFilter 退出登录
+http.logout().logoutUrl("/logout")
+	// 注销成功的处理器
+	.logoutSuccessHandler(new LogoutSuccessHandler() {
+		@Override
+		public void onLogoutSuccess(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) throws IOException, ServletException {
+			httpServletResponse.setContentType("application/json;charset=utf-8");
+			PrintWriter out = httpServletResponse.getWriter();
+			Map<String, Object> map = new HashMap<>();
+			map.put("status", 200);
+			map.put("msg", "注销登录成功！");
+			out.write(new ObjectMapper().writeValueAsString(map));
+			out.flush();
+			out.close();
+		}
+	});
+
+4、UsernamePasswordAuthenticationFilter 用户登录
+http.formLogin()
+    // 登录处理接口
+      .loginProcessingUrl("/login")
+    // 定义登录页面，未登录时，访问一个需要登录之后才能访问的接口，会自动跳转到该页面
+      .loginPage("/login")
+    // 定义登录时，用户名的 key，默认为 username
+      .usernameParameter("uname")
+    // 定义登录时，用户密码的 key，默认为 password
+      .passwordParameter("passwd")
+    // 登录成功的处理器
+      .successHandler(new AuthenticationSuccessHandler() {
+          @Override
+          public void onAuthenticationSuccess(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) throws IOException, ServletException {
+              httpServletResponse.setContentType("application/json;charset=utf-8");
+              PrintWriter out = httpServletResponse.getWriter();
+              Map<String, Object> map = new HashMap<>();
+              map.put("status", 200);
+              map.put("msg", authentication.getPrincipal());
+              out.write(new ObjectMapper().writeValueAsString(map));
+              out.flush();
+              out.close();
+          }
+      })
+      // 登录失败的处理器
+      .failureHandler(new AuthenticationFailureHandler() {
+          @Override
+          public void onAuthenticationFailure(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, AuthenticationException e) throws IOException, ServletException {
+              httpServletResponse.setContentType("application/json;charset=utf-8");
+              PrintWriter out = httpServletResponse.getWriter();
+              Map<String, Object> map = new HashMap<>();
+              map.put("status", 401);
+              if (e instanceof LockedException) {
+                  map.put("msg", "账户被锁定，登录失败！");
+              } else if (e instanceof BadCredentialsException) {
+                  map.put("msg", "用户名或密码输入错误，登录失败！");
+              } else if (e instanceof DisabledException) {
+                  map.put("msg", "账户被禁用，登录失败！");
+              } else if (e instanceof AccountExpiredException) {
+                  map.put("msg", "账户过期，登录失败！");
+              } else if (e instanceof CredentialsExpiredException) {
+                  map.put("msg", "密码过期，登录失败！");
+              } else {
+                  map.put("msg", "登录失败！");
+              }
+              out.write(new ObjectMapper().writeValueAsString(map));
+              out.flush();
+              out.close();
+          }
+      })
+      
+ 
+ 5、RequestCacheAwareFilter
+ https://segmentfault.com/a/1190000004183264
+http.requestCache().requestCache(new NullRequestCache());
+
+
+ 
+ 6、AnonymousAuthenticationFilter
+http.anonymous().disable()
+ 
+ 
+ 7、ExceptionTranslationFilter 认证、授权失败处理
+ http.exceptionHandling()
+      .accessDeniedHandler(new SimpleAccessDeniedHandler())
+      .authenticationEntryPoint(new SimpleAuthenticationEntryPoint());
+ 
+ 
+ 8、FilterSecurityInterceptor 认证、授权
+ http.authorizeRequests()
+    .antMatchers("/admin").hasRole("admin")
+    // 登录无需认证
+    .antMatchers("/login").permitAll()
+    .anyRequest().authenticated()
+ 
+ 

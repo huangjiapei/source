@@ -40,7 +40,7 @@
       调用注册配置类的configure()方法：配置httpSecurity、添加过滤器
 
 
-3、认证流程--UsernamePasswordAuthenticationFilter.doFilter()
+3、登录认证流程--UsernamePasswordAuthenticationFilter.doFilter()
 （1）满足认证条件:Post方法
 （2）过滤器通过AuthnticationManager.authenticate()进行认证
 （3）AuthnticationManager通过AuthenticationProvider进行认证【AuthnticationManager里面有很多AuthenticationProvider】
@@ -49,7 +49,7 @@
 
 
 4、授权流程--FilterSecurityInterceptor.doFilter()
-【此Filter为最后一个Filter，走到这里说明已经认证通过】
+【此Filter为最后一个Filter】
 （1）取出请求的url、认证对象的权限
 （2）取出用户定义的url、权限
 （3）比较1、2，如果满足条件则授权成功、否则失败
